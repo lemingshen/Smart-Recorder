@@ -21,8 +21,8 @@ public class MainActivity extends AppCompatActivity
 {
 	private ListView recording_list;
 	private ArrayList<String> list_data;
-	private MediaRecorder recorder;
-	private String main_path, bottom_path, current_file_name;
+	private MediaRecorder recorder = null, camera_recorder = null;
+	private String main_path, stereo_path, current_file_name;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -31,63 +31,121 @@ public class MainActivity extends AppCompatActivity
 		setContentView(R.layout.activity_main);
 
 		/* variables initialization */
-		boolean result = false;
 		recorder = null;
 		list_data = new ArrayList<>();
 		this.recording_list = (ListView) findViewById(R.id.list_view);
 
-		/* create two folder to store sound from different mic */
-		File path = new File(getExternalCacheDir(), "main");
-		main_path = path.getAbsolutePath() + "/";
-		if (!path.exists())
+		/* check preliminary */
+		if (grant_permission())
 		{
-			result = path.mkdirs();
-		}
+			if (create_folder())
+			{
+				Toast toast = Toast.makeText(getApplicationContext(), "Preliminaries Done.", Toast.LENGTH_LONG);
+				toast.show();
+			}
+			else
+			{
+				Toast toast = Toast.makeText(getApplicationContext(), "Folders creation failed.", Toast.LENGTH_LONG);
+				toast.show();
 
-		path = new File(getExternalCacheDir(), "bottom");
-		bottom_path = path.getAbsolutePath() + "/";
-		if (!path.exists())
-		{
-			result = result & path.mkdirs();
+				System.exit(100);
+			}
 		}
-
-		if (result)
+		else
 		{
-			Toast toast = Toast.makeText(getApplicationContext(), "folders created successfully", Toast.LENGTH_LONG);
+			Toast toast = Toast.makeText(getApplicationContext(), "We need permission!", Toast.LENGTH_LONG);
 			toast.show();
+
+			System.exit(100);
 		}
 	}
 
-	/* start recording sound */
-	public void record()
+	public boolean create_folder()
 	{
-		if (recorder != null)
+		boolean result = true;
+
+		/* create two folder to store sound from different mic */
+		try
 		{
-			try
+			File path = new File(getExternalCacheDir(), "main");
+			main_path = path.getAbsolutePath() + "/";
+
+			if (!path.exists())
+			{
+				result = path.mkdirs();
+			}
+
+			path = new File(getExternalCacheDir(), "stereo");
+			stereo_path = path.getAbsolutePath() + "/";
+
+			if (!path.exists())
+			{
+				result = result & path.mkdirs();
+			}
+		}
+		catch (Exception e)
+		{
+			result = false;
+		}
+
+		return result;
+	}
+
+	/* start recording sound */
+	public void record(boolean mode)
+	{
+		try
+		{
+			if (recorder != null)
 			{
 				recorder.prepare();
 				recorder.start();
 			}
-			catch (Exception e)
+
+			if (!mode && camera_recorder != null)
 			{
-				e.printStackTrace();
+				camera_recorder.prepare();
+				camera_recorder.start();
 			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
 		}
 	}
 
 	/* stop recorder */
 	public void stop_record(View v)
 	{
-		recorder.stop();
-		recorder.release();
-		recorder = null;
+		try
+		{
+			if (recorder != null)
+			{
+				recorder.stop();
+				recorder.release();
+				recorder = null;
 
-		list_data.add(current_file_name);
-		ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, list_data);
-		recording_list.setAdapter(adapter);
+				list_data.add(current_file_name);
+				ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, list_data);
+				recording_list.setAdapter(adapter);
+			}
+
+			if (camera_recorder != null)
+			{
+				camera_recorder.stop();
+				camera_recorder.release();
+				camera_recorder = null;
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+
+			System.exit(101);
+		}
 	}
 
-	/* mode true for record with main mic, false for record with bottom mic */
+	/* mode true for record with main mic, false for record with main mic and top mic */
 	public boolean configure_recorder(boolean mode)
 	{
 		boolean result = false;
@@ -95,18 +153,19 @@ public class MainActivity extends AppCompatActivity
 		/* formulate the file name with timestamp */
 		long current_timestamp = System.currentTimeMillis();
 		SimpleDateFormat date_format = new SimpleDateFormat("yyyyMMdd-HHmmss-SSS");
-		String file_path = "";
+		String file_path = "", top_file_path = "";
 
 		/* store the file in different directory according to the mode */
 		if (mode)
 		{
-			current_file_name = "main/" + date_format.format(current_timestamp) + ".amr";
-			file_path = main_path + date_format.format(current_timestamp) + ".amr";
+			current_file_name = "main/" + date_format.format(current_timestamp) + ".acc";
+			file_path = main_path + date_format.format(current_timestamp) + ".acc";
 		}
 		else
 		{
-			current_file_name = "bottom/" + date_format.format(current_timestamp) + ".amr";
-			file_path = bottom_path + date_format.format(current_timestamp) + ".amr";
+			current_file_name = "stereo/" + date_format.format(current_timestamp) + ".acc";
+			file_path = stereo_path + date_format.format(current_timestamp) + "_main.acc";
+			top_file_path = stereo_path + date_format.format(current_timestamp) + "_top.acc";
 		}
 
 		File record_file = new File(file_path);
@@ -115,25 +174,22 @@ public class MainActivity extends AppCompatActivity
 			record_file.delete();
 		}
 
+		File top_file = new File(top_file_path);
+		if (top_file.exists())
+		{
+			top_file.delete();
+		}
+
 		/* initialize the recorder if the recorder is not working */
 		if (recorder == null)
 		{
 			recorder = new MediaRecorder();
 			recorder.setAudioSamplingRate(44100);
 
-			/* select recording mic according to mode */
-			if (mode)
-			{
-				recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-			}
-			else
-			{
-				recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION);
-			}
-
-			/* configure output sound format, encoder, and output file */
-			recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
-			recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+			/* configure mic, output sound format, encoder, and output file */
+			recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+			recorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);
+			recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 			recorder.setOutputFile(record_file.getAbsolutePath());
 			System.out.println(record_file.getAbsolutePath());
 
@@ -147,16 +203,62 @@ public class MainActivity extends AppCompatActivity
 					recorder.release();
 					recorder = null;
 
-					Toast toast = Toast.makeText(getApplicationContext(), "recorder error", Toast.LENGTH_LONG);
+					Toast toast = Toast.makeText(getApplicationContext(), "main recorder error", Toast.LENGTH_LONG);
 					toast.show();
 				}
 			});
 
-			/* message */
-			Toast toast = Toast.makeText(getApplicationContext(), "start recording with " + (mode ? "main mic" : "bottom mic"), Toast.LENGTH_LONG);
+			result = true;
+		}
+
+		try
+		{
+			if (camera_recorder == null && !mode)
+			{
+				camera_recorder = new MediaRecorder();
+				camera_recorder.setAudioSamplingRate(44100);
+
+				/* configure mic, output sound format, encoder, and output file */
+
+				camera_recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+				camera_recorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);
+				camera_recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+				camera_recorder.setOutputFile(top_file.getAbsolutePath());
+				System.out.println(top_file.getAbsolutePath());
+
+				/* add recorder error listener method */
+				camera_recorder.setOnErrorListener(new MediaRecorder.OnErrorListener()
+				{
+					@Override
+					public void onError(MediaRecorder mediaRecorder, int i, int i1)
+					{
+						camera_recorder.stop();
+						camera_recorder.release();
+						camera_recorder = null;
+
+						Toast toast = Toast.makeText(getApplicationContext(), "camera recorder error", Toast.LENGTH_LONG);
+						toast.show();
+					}
+				});
+
+				result = result & true;
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+
+			Toast toast = Toast.makeText(getApplicationContext(), "camera recorder may not be supported", Toast.LENGTH_LONG);
 			toast.show();
 
-			result = true;
+			result = false;
+		}
+
+		/* message */
+		if (result)
+		{
+			Toast toast = Toast.makeText(getApplicationContext(), "start recording with " + (mode ? "main mic" : "stereo mic"), Toast.LENGTH_LONG);
+			toast.show();
 		}
 
 		return result;
@@ -166,7 +268,7 @@ public class MainActivity extends AppCompatActivity
 	{
 		if (configure_recorder(true))
 		{
-			record();
+			record(true);
 		}
 		else
 		{
@@ -175,11 +277,11 @@ public class MainActivity extends AppCompatActivity
 		}
 	}
 
-	public void record_with_bottom(View v)
+	public void record_with_stereo(View v)
 	{
 		if (configure_recorder(false))
 		{
-			record();
+			record(true);
 		}
 		else
 		{
@@ -203,18 +305,24 @@ public class MainActivity extends AppCompatActivity
 	}
 
 	/* asking for permission */
-	public void grant_permission(View v)
+	public boolean grant_permission()
 	{
 		String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE};
 
-		if (check_permission(permissions))
+		try
 		{
-			Toast toast = Toast.makeText(getApplicationContext(), "permission already granted", Toast.LENGTH_LONG);
-			toast.show();
+			if (!check_permission(permissions))
+			{
+				ActivityCompat.requestPermissions(this, permissions, 10000);
+			}
+
+			return true;
 		}
-		else
+		catch (Exception e)
 		{
-			ActivityCompat.requestPermissions(this, permissions, 10000);
+			e.printStackTrace();
+
+			return false;
 		}
 	}
 }

@@ -55,8 +55,8 @@
         android:id="@+id/start_button_bottom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:onClick="record_with_bottom"
-        android:text="Bottom"
+        android:onClick="record_with_stereo"
+        android:text="Stereo"
         android:textAllCaps="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -66,19 +66,6 @@
         app:layout_constraintVertical_bias="0.85"
         tools:layout_editor_absoluteX="80dp"
         tools:layout_editor_absoluteY="449dp" />
-
-    <Button
-        android:id="@+id/permission"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:onClick="grant_permission"
-        android:text="Grant Permission"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.95" />
 
     <ListView
         android:id="@+id/list_view"
