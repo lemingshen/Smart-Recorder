@@ -159,14 +159,14 @@ public class MainActivity extends AppCompatActivity
 		/* store the file in different directory according to the mode */
 		if (mode)
 		{
-			current_file_name = "main/" + date_format.format(current_timestamp) + ".acc";
-			file_path = main_path + date_format.format(current_timestamp) + ".acc";
+			current_file_name = "main/" + date_format.format(current_timestamp) + ".aac";
+			file_path = main_path + date_format.format(current_timestamp) + ".aac";
 		}
 		else
 		{
-			current_file_name = "stereo/" + date_format.format(current_timestamp) + ".acc";
-			file_path = stereo_path + date_format.format(current_timestamp) + "_main.acc";
-			top_file_path = stereo_path + date_format.format(current_timestamp) + "_top.acc";
+			current_file_name = "stereo/" + date_format.format(current_timestamp) + ".aac";
+			file_path = stereo_path + date_format.format(current_timestamp) + "_main.aac";
+			top_file_path = stereo_path + date_format.format(current_timestamp) + "_top.aac";
 		}
 
 		File record_file = new File(file_path);
@@ -221,7 +221,7 @@ public class MainActivity extends AppCompatActivity
 
 				/* configure mic, output sound format, encoder, and output file */
 
-				camera_recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+				camera_recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
 				camera_recorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);
 				camera_recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 				camera_recorder.setOutputFile(top_file.getAbsolutePath());
