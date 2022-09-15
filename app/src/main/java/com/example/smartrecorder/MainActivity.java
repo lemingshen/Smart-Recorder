@@ -104,6 +104,7 @@ public class MainActivity extends AppCompatActivity
 
 			if (!mode && camera_recorder != null)
 			{
+				System.out.println("===========================stereo begin");
 				camera_recorder.prepare();
 				camera_recorder.start();
 			}
@@ -220,7 +221,7 @@ public class MainActivity extends AppCompatActivity
 
 				/* configure mic, output sound format, encoder, and output file */
 
-				camera_recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+				camera_recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
 				camera_recorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);
 				camera_recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 				camera_recorder.setOutputFile(top_file.getAbsolutePath());
@@ -281,7 +282,7 @@ public class MainActivity extends AppCompatActivity
 	{
 		if (configure_recorder(false))
 		{
-			record(true);
+			record(false);
 		}
 		else
 		{
